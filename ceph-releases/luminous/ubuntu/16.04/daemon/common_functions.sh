@@ -7,8 +7,8 @@ function log {
     return 1
   fi
 
-  TIMESTAMP=$(date '+%F %T')
-  echo "${TIMESTAMP}  $0: $*"
+  local timestamp=$(date '+%F %T')
+  echo "$timestamp  $0: $*"
   return 0
 }
 
@@ -23,8 +23,8 @@ function check_config {
 # ceph admin key exists or die
 function check_admin_key {
   if [[ ! -e $ADMIN_KEYRING ]]; then
-      log "ERROR- $ADMIN_KEYRING must exist; get it from your existing mon"
-      exit 1
+    log "ERROR- $ADMIN_KEYRING must exist; get it from your existing mon"
+    exit 1
   fi
 }
 
@@ -134,10 +134,9 @@ function osd_trying_to_determine_scenario {
 }
 
 function get_osd_dev {
-  for i in ${OSD_DISKS}
-   do
-    osd_id=$(echo ${i}|sed 's/\(.*\):\(.*\)/\1/')
-    osd_dev="/dev/$(echo ${i}|sed 's/\(.*\):\(.*\)/\2/')"
+  for i in ${OSD_DISKS}; do
+    local osd_id=$(echo ${i}|sed 's/\(.*\):\(.*\)/\1/')
+    local osd_dev="/dev/$(echo ${i}|sed 's/\(.*\):\(.*\)/\2/')"
     if [ ${osd_id} = ${1} ]; then
       echo -n "${osd_dev}"
     fi

@@ -9,7 +9,7 @@ function flat_to_ipv6 {
   # This input usually comes from the ipv6_route or if_inet6 files from /proc
 
   # First, split the string in set of 4 bytes with ":" as separator
-  value=$(echo "$@" | sed -e 's/.\{4\}/&:/g' -e '$s/\:$//')
+  local value=$(echo "$@" | sed -e 's/.\{4\}/&:/g' -e '$s/\:$//')
 
   # Let's remove the useless 0000 and "::"
   value=${value//0000/:};
@@ -20,17 +20,17 @@ function flat_to_ipv6 {
 }
 
 function get_ip {
-  NIC=$1
+  local nic=$1
   # IPv4 is the default unless we specify it
-  IP_VERSION=${2:-4}
+  local ip_version=${2:-4}
   # We should avoid reporting any IPv6 "scope local" interface that would make the ceph bind() call to fail
   if is_available ip; then
-    ip -$IP_VERSION -o a s $NIC | grep "scope global" | awk '{ sub ("/..", "", $4); print $4 }' || true
+    ip -$ip_version -o a s $nic | grep "scope global" | awk '{ sub ("/..", "", $4); print $4 }' || true
   else
-    case "$IP_VERSION" in
+    case "$ip_version" in
       6)
         # We don't want local scope, so let's remove field 4 if not 00
-        ip=$(flat_to_ipv6 $(grep $NIC /proc/net/if_inet6 | awk '$4==00 {print $1}'))
+        local ip=$(flat_to_ipv6 $(grep $nic /proc/net/if_inet6 | awk '$4==00 {print $1}'))
         # IPv6 IPs should be surrounded by brackets to let ceph-monmap being happy
         echo "[$ip]"
         ;;
@@ -44,24 +44,24 @@ function get_ip {
 function get_network {
   NIC=$1
   # IPv4 is the default unless we specify it
-  IP_VERSION=${2:-4}
+  local ip_version=${2:-4}
 
-  case "$IP_VERSION" in
+  case "$ip_version" in
     6)
       if is_available ip; then
-        ip -$IP_VERSION route show dev $NIC | grep proto | awk '{ print $1 }' | grep -v default | grep -vi ^fe80 || true
+        ip -$ip_version route show dev $nic | grep proto | awk '{ print $1 }' | grep -v default | grep -vi ^fe80 || true
       else
         # We don't want the link local routes
-        line=$(grep $NIC /proc/1/task/1/net/ipv6_route | awk '$2==40' | grep -v ^fe80 || true)
-        base=$(echo $line | awk '{ print $1 }')
-        base=$(flat_to_ipv6 $base)
-        mask=$(echo $line | awk '{ print $2 }')
+        local line=$(grep $nic /proc/1/task/1/net/ipv6_route | awk '$2==40' | grep -v ^fe80 || true)
+        local base=$(echo $line | awk '{ print $1 }')
+        local base=$(flat_to_ipv6 $base)
+        local mask=$(echo $line | awk '{ print $2 }')
         echo "$base/$((16#$mask))"
       fi
       ;;
     *)
       if is_available ip; then
-        ip -$IP_VERSION route show dev $NIC | grep proto | awk '{ print $1 }' | grep -v default | grep "/" || true
+        ip -$ip_version route show dev $nic | grep proto | awk '{ print $1 }' | grep -v default | grep "/" || true
       else
         grep -o "$IPV4_NETWORK_REGEXP" /proc/net/fib_trie | grep -vE "^127|^0" | head -1
       fi
@@ -81,20 +81,20 @@ function start_mon {
         exit 1
       fi
   else
-    NIC_MORE_TRAFFIC=$(grep -vE "lo:|face|Inter" /proc/net/dev | sort -n -k 2 | tail -1 | awk '{ sub (":", "", $1); print $1 }')
-    IP_VERSION=4
+    local nic_more_traffic=$(grep -vE "lo:|face|Inter" /proc/net/dev | sort -n -k 2 | tail -1 | awk '{ sub (":", "", $1); print $1 }')
+    local ip_version=4
     if [ ${NETWORK_AUTO_DETECT} -gt 1 ]; then
-      MON_IP=$(get_ip ${NIC_MORE_TRAFFIC} ${NETWORK_AUTO_DETECT})
-      CEPH_PUBLIC_NETWORK=$(get_network ${NIC_MORE_TRAFFIC} ${NETWORK_AUTO_DETECT})
-      IP_VERSION=${NETWORK_AUTO_DETECT}
+      MON_IP=$(get_ip ${nic_more_traffic} ${NETWORK_AUTO_DETECT})
+      CEPH_PUBLIC_NETWORK=$(get_network ${nic_more_traffic} ${NETWORK_AUTO_DETECT})
+      ip_version=${NETWORK_AUTO_DETECT}
     else # Means -eq 1
-      MON_IP="[$(get_ip ${NIC_MORE_TRAFFIC} 6)]"
-      CEPH_PUBLIC_NETWORK=$(get_network ${NIC_MORE_TRAFFIC} 6)
-      IP_VERSION=6
+      MON_IP="[$(get_ip ${nic_more_traffic} 6)]"
+      CEPH_PUBLIC_NETWORK=$(get_network ${nic_more_traffic} 6)
+      ip_version=6
       if [ -z "$MON_IP" ]; then
-        MON_IP=$(get_ip ${NIC_MORE_TRAFFIC})
-        CEPH_PUBLIC_NETWORK=$(get_network ${NIC_MORE_TRAFFIC})
-        IP_VERSION=4
+        MON_IP=$(get_ip ${nic_more_traffic})
+        CEPH_PUBLIC_NETWORK=$(get_network ${nic_more_traffic})
+        ip_version=4
       fi
     fi
   fi
@@ -104,7 +104,7 @@ function start_mon {
     exit 1
   fi
 
-  get_mon_config $IP_VERSION
+  get_mon_config $ip_version
 
   # If we don't have a monitor keyring, this is a new monitor
   if [ ! -e "$MON_DATA_DIR/keyring" ]; then

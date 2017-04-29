@@ -28,12 +28,12 @@ function start_rgw {
 
   log "SUCCESS"
 
-  RGW_FRONTENDS="civetweb port=$RGW_CIVETWEB_PORT"
+  local rgw_frontends="civetweb port=$RGW_CIVETWEB_PORT"
   if [ "$RGW_REMOTE_CGI" -eq 1 ]; then
-    RGW_FRONTENDS="fastcgi socket_port=$RGW_REMOTE_CGI_PORT socket_host=$RGW_REMOTE_CGI_HOST"
+    rgw_frontends="fastcgi socket_port=$RGW_REMOTE_CGI_PORT socket_host=$RGW_REMOTE_CGI_HOST"
   fi
 
-  exec /usr/bin/radosgw $DAEMON_OPTS -n client.rgw.${RGW_NAME} -k $RGW_KEYRING --rgw-socket-path="" --rgw-zonegroup="$RGW_ZONEGROUP" --rgw-zone="$RGW_ZONE" --rgw-frontends="$RGW_FRONTENDS"
+  exec /usr/bin/radosgw $DAEMON_OPTS -n client.rgw.${RGW_NAME} -k $RGW_KEYRING --rgw-socket-path="" --rgw-zonegroup="$RGW_ZONEGROUP" --rgw-zone="$RGW_ZONE" --rgw-frontends="$rgw_frontends"
 }
 
 function create_rgw_user {
@@ -46,10 +46,10 @@ function create_rgw_user {
 
   mv /var/lib/ceph/radosgw/keyring $RGW_KEYRING
 
-  USER_KEY=""
+  local user_key=""
   if [ -n "${RGW_USER_SECRET_KEY}" ]; then
-    USER_KEY="--access-key=${RGW_USER_USER_KEY} --secret=${RGW_USER_SECRET_KEY}"
+    user_key="--access-key=${RGW_USER_USER_KEY} --secret=${RGW_USER_SECRET_KEY}"
   fi
 
-  exec radosgw-admin user create --uid=${RGW_USER} ${USER_KEY} --display-name="RGW ${RGW_USER} User" -c /etc/ceph/${CLUSTER}.conf
+  exec radosgw-admin user create --uid=${RGW_USER} ${user_key} --display-name="RGW ${RGW_USER} User" -c /etc/ceph/${CLUSTER}.conf
 }

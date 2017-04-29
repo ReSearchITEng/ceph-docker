@@ -26,17 +26,17 @@ function zap_device {
   done
 
   # look for Ceph encrypted partitions
-  ceph_dm=$(blkid -t TYPE="crypto_LUKS" ${OSD_DEVICE}* -o value -s PARTUUID || true)
+  local ceph_dm=$(blkid -t TYPE="crypto_LUKS" ${OSD_DEVICE}* -o value -s PARTUUID || true)
   if [[ -n $ceph_dm ]]; then
     for dm_uuid in $ceph_dm; do
-      dm_path="/dev/disk/by-partuuid/$dm_uuid"
+      local dm_path="/dev/disk/by-partuuid/$dm_uuid"
       dmsetup --verbose --force wipe_table $dm_uuid || true
       dmsetup --verbose --force remove $dm_uuid || true
 
       # erase all keyslots (remove encryption key)
       cryptsetup --verbose --batch-mode erase $dm_path
-      payload_offset=$(cryptsetup luksDump $dm_path | awk '/Payload offset:/ { print $3 }')
-      phys_sector_size=$(blockdev --getpbsz $dm_path)
+      local payload_offset=$(cryptsetup luksDump $dm_path | awk '/Payload offset:/ { print $3 }')
+      local phys_sector_size=$(blockdev --getpbsz $dm_path)
       if ! is_integer "$phys_sector_size"; then
         # If the sector size isn't a number, let's default to 512
         phys_sector_size=512
@@ -47,7 +47,7 @@ function zap_device {
   fi
 
   for device in $(comma_to_space ${OSD_DEVICE}); do
-    raw_device=$(echo $device | egrep -o ${device_match_string})
+    local raw_device=$(echo $device | egrep -o ${device_match_string})
     if echo $device | egrep -sq ${device_match_string}; then
       log "Zapping the entire device $device"
       sgdisk --zap-all --clear --mbrtogpt -g -- $device

@@ -4,13 +4,13 @@ set -e
 source variables_entrypoint.sh
 
 # FUNCTIONS
-moving_on () {
+function moving_on {
   echo "INFO: moving on, using default entrypoint.sh.in file as is."
   mv /entrypoint.sh.in /entrypoint.sh
   exit 0
 }
 
-check_scenario_file ()
+function check_scenario_file {
   if [ -s /disabled_scenario ]; then
     source /disabled_scenario
     if [[ -z "$EXCLUDED_TAGS" ]]; then
@@ -23,8 +23,9 @@ check_scenario_file ()
     echo "INFO: disabled_scenario file is empty, no scenario to disable."
     moving_on
   fi
+}
 
-build_sed_regex () {
+function build_sed_regex {
   for tag in $EXCLUDED_TAGS; do
     SED_LINE="s/# TAG: $tag/unsupported_scenario/g; ${SED_LINE}"
     ALL_SCENARIOS="${ALL_SCENARIOS/$tag /}"

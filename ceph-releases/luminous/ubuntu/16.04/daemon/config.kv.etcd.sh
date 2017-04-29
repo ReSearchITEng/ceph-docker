@@ -59,9 +59,9 @@ function get_mon_config {
     ceph-authtool $MON_KEYRING --create-keyring --gen-key -n mon. --cap mon 'allow *'
 
     for item in ${OSD_BOOTSTRAP_KEYRING}:Osd ${MDS_BOOTSTRAP_KEYRING}:Mds ${RGW_BOOTSTRAP_KEYRING}:Rgw; do
-      array=(${item//:/ })
-      keyring=${array[0]}
-      bootstrap="bootstrap-${array[1]}"
+      local array=(${item//:/ })
+      local keyring=${array[0]}
+      local bootstrap="bootstrap-${array[1]}"
       ceph-authtool $keyring --create-keyring --gen-key -n client.$(to_lowercase $bootstrap) --cap mon "allow profile $(to_lowercase $bootstrap)"
       bootstrap="bootstrap${array[1]}Keyring"
       etcdctl $ETCDCTL_OPTS ${KV_TLS} set ${CLUSTER_PATH}/${bootstrap} < $keyring
@@ -88,9 +88,9 @@ function get_mon_config {
 
 function import_bootstrap_keyrings {
   for item in ${OSD_BOOTSTRAP_KEYRING}:Osd ${MDS_BOOTSTRAP_KEYRING}:Mds ${RGW_BOOTSTRAP_KEYRING}:Rgw; do
-    array=(${item//:/ })
-    keyring=${array[0]}
-    bootstrap_keyring="bootstrap${array[1]}Keyring"
+    local array=(${item//:/ })
+    local keyring=${array[0]}
+    local bootstrap_keyring="bootstrap${array[1]}Keyring"
     etcdctl $ETCDCTL_OPTS ${KV_TLS} get ${CLUSTER_PATH}/${bootstrap_keyring} > $keyring
     chown ceph. $keyring
   done

@@ -12,7 +12,7 @@ function get_admin_key {
 
 function get_mon_config {
   # IPv4 is the default unless we specify it
-  IP_LEVEL=${1:-4}
+  local ip_level=${1:-4}
 
   if [ ! -e /etc/ceph/${CLUSTER}.conf ]; then
     local fsid=$(uuidgen)
@@ -28,12 +28,12 @@ public network = ${CEPH_PUBLIC_NETWORK}
 cluster network = ${CEPH_CLUSTER_NETWORK}
 osd journal size = ${OSD_JOURNAL_SIZE}
 ENDHERE
-    if [ $IP_LEVEL -eq 6 ]; then
+    if [ $ip_level -eq 6 ]; then
       echo "ms bind ipv6 = true" >> /etc/ceph/${CLUSTER}.conf
     fi
   else
     # extract fsid from ceph.conf
-    fsid=`grep "fsid" /etc/ceph/${CLUSTER}.conf |awk '{print $NF}'`
+    fsid=$(grep "fsid" /etc/ceph/${CLUSTER}.conf | awk '{print $NF}')
   fi
 
   if [ ! -e $ADMIN_KEYRING ]; then
